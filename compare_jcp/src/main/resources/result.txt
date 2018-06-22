@@ -46,6 +46,11 @@ cost:1219
 cost:1233
 cost:1240
 
+#mybatis 插件用法;
+
+
+mybatis 插件，新sql 耗时统计,sql 查询次数,
+
 
 
 
