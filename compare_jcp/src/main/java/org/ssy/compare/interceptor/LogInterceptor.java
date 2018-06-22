@@ -1,6 +1,9 @@
 package org.ssy.compare.interceptor;
 
 import java.sql.Connection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.ibatis.executor.statement.StatementHandler;
@@ -20,6 +23,8 @@ import org.apache.ibatis.reflection.SystemMetaObject;
     @Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class})
 })
 public class LogInterceptor implements Interceptor {
+  
+  Set sqlSet=new HashSet();
 
   public Object intercept(Invocation invocation) throws Throwable {
 
@@ -31,9 +36,11 @@ public class LogInterceptor implements Interceptor {
 
       String sql = boundSql.getSql();
       System.out.println("原始SQL: " + sql);
+      sqlSet.add(sql);
+
 
       String pageSql = overrideSQL(sql);
-      System.out.println("改写后的SQL: " + pageSql);
+      System.out.println("改写后的SQL: " + pageSql+" size:"+sqlSet.size());
 
       metaStatementHandler.setValue("delegate.boundSql.sql", pageSql);
     }
