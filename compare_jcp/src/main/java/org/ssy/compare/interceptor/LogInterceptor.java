@@ -23,7 +23,7 @@ import org.apache.ibatis.reflection.SystemMetaObject;
     @Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class})
 })
 public class LogInterceptor implements Interceptor {
-  
+
   Set sqlSet=new HashSet();
 
   public Object intercept(Invocation invocation) throws Throwable {
