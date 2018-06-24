@@ -17,8 +17,6 @@ import org.apache.ibatis.transaction.TransactionFactory;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.ssy.compare.common.BusinessMapper;
 import org.ssy.compare.common.SelectRunnable;
-import org.ssy.compare.interceptor.LogInterceptor;
-import org.ssy.compare.interceptor.SqlCostInterceptor;
 
 /**
  * Created by manager on 2018/6/12.
