@@ -5,7 +5,7 @@ import org.apache.ibatis.jdbc.SQL;
 /**
  * Created by manager on 2018/6/24.
  */
-public class LearnMybatis {
+public class LearnBuildSQL {
 
   public static void main(String args[]) {
 
