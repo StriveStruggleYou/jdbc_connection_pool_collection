@@ -1,9 +1,13 @@
 package org.ssy.compare.hikaricp;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.zaxxer.hikari.HikariDataSource;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import javax.sql.DataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -41,9 +45,20 @@ public class HikariCPTest {
 
   public static DataSource getHikariDataSource() {
     HikariDataSource ds = new HikariDataSource();
-    ds.setJdbcUrl("x");
-    ds.setUsername("x");
-    ds.setPassword("x");
+    Properties properties = new Properties();
+
+    BufferedReader bufferedReader = null;
+    try {
+      bufferedReader = new BufferedReader(new FileReader(
+          "/Users/manager/jdbc_connection_pool_collection/compare_jcp/src/main/resources/jdbc.properties"));
+      properties.load(bufferedReader);
+    } catch (Exception e) {
+      e.printStackTrace();
+
+    }
+    ds.setJdbcUrl(properties.getProperty("url"));
+    ds.setUsername(properties.getProperty("user"));
+    ds.setPassword(properties.getProperty("password"));
     ds.setDriverClassName("com.mysql.jdbc.Driver");
     return ds;
   }
