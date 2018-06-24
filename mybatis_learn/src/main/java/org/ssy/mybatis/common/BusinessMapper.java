@@ -7,10 +7,12 @@ import org.apache.ibatis.annotations.Select;
  */
 public interface BusinessMapper {
 
-    @Select("SELECT * FROM business WHERE bus_id = #{id}")
-    Business selectBusiness(int id);
+  @Select("SELECT * FROM business WHERE bus_id = #{id}")
+  Business selectBusiness(int id);
 
 
+  @Select("SELECT * FROM business WHERE bus_name = #{busName}")
+  Business selectBusinessName(String busName);
 
 
 }
