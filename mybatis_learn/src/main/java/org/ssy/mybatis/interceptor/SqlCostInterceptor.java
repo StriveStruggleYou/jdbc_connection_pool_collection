@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.ParameterMapping;
@@ -16,21 +18,32 @@ import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.defaults.DefaultSqlSession.StrictMap;
+import org.ssy.mybatis.util.ExplainUtil;
 
 /**
  * Sql执行时间记录拦截器
  */
-@Intercepts({@Signature(type = StatementHandler.class, method = "query", args = {Statement.class, ResultHandler.class}),
+@Intercepts({@Signature(type = StatementHandler.class, method = "query", args = {Statement.class,
+    ResultHandler.class}),
     @Signature(type = StatementHandler.class, method = "update", args = {Statement.class}),
-    @Signature(type = StatementHandler.class, method = "batch", args = { Statement.class })})
+    @Signature(type = StatementHandler.class, method = "batch", args = {Statement.class})})
 public class SqlCostInterceptor implements Interceptor {
+
+
+  public SqlCostInterceptor(DataSource dataSource) {
+    Thread thread = new Thread(new ExplainUtil(dataSource));
+    thread.start();
+  }
+
+
+  public static ConcurrentHashMap<String, String> sqlTemplateAndSql = new ConcurrentHashMap<>();
 
   @Override
   public Object intercept(Invocation invocation) throws Throwable {
     Object target = invocation.getTarget();
 
     long startTime = System.currentTimeMillis();
-    StatementHandler statementHandler = (StatementHandler)target;
+    StatementHandler statementHandler = (StatementHandler) target;
     try {
       return invocation.proceed();
     } finally {
@@ -38,14 +51,18 @@ public class SqlCostInterceptor implements Interceptor {
       long sqlCost = endTime - startTime;
 
       BoundSql boundSql = statementHandler.getBoundSql();
-      String sql = boundSql.getSql();
+      String sqlTemp = boundSql.getSql();
+
       Object parameterObject = boundSql.getParameterObject();
       List<ParameterMapping> parameterMappingList = boundSql.getParameterMappings();
 
       // 格式化Sql语句，去除换行符，替换参数
-      sql = formatSql(sql, parameterObject, parameterMappingList);
+      String sql = formatSql(sqlTemp, parameterObject, parameterMappingList);
 
-      System.out.println("SQL：[" + sql + "]执行耗时[" + sqlCost + "ms]");
+      sqlTemplateAndSql.putIfAbsent(sqlTemp, sql);
+
+      System.out.println(
+          "SQL：[" + sql + "]执行耗时[" + sqlCost + "ms]" + " tempSize:" + sqlTemplateAndSql.size());
     }
   }
 
@@ -60,7 +77,8 @@ public class SqlCostInterceptor implements Interceptor {
   }
 
   @SuppressWarnings("unchecked")
-  private String formatSql(String sql, Object parameterObject, List<ParameterMapping> parameterMappingList) {
+  private String formatSql(String sql, Object parameterObject,
+      List<ParameterMapping> parameterMappingList) {
     // 输入sql字符串空判断
     if (sql == null || sql.length() == 0) {
       return "";
@@ -70,7 +88,8 @@ public class SqlCostInterceptor implements Interceptor {
     sql = beautifySql(sql);
 
     // 不传参数的场景，直接把Sql美化一下返回出去
-    if (parameterObject == null || parameterMappingList == null || parameterMappingList.size() == 0) {
+    if (parameterObject == null || parameterMappingList == null
+        || parameterMappingList.size() == 0) {
       return sql;
     }
 
@@ -84,7 +103,7 @@ public class SqlCostInterceptor implements Interceptor {
         // 如果参数是StrictMap且Value类型为Collection，获取key="list"的属性，这里主要是为了处理<foreach>循环时传入List这种参数的占位符替换
         // 例如select * from xxx where id in <foreach collection="list">...</foreach>
         if (isStrictMap(parameterObjectClass)) {
-          StrictMap<Collection<?>> strictMap = (StrictMap<Collection<?>>)parameterObject;
+          StrictMap<Collection<?>> strictMap = (StrictMap<Collection<?>>) parameterObject;
 
           if (isList(strictMap.get("list").getClass())) {
             sql = handleListParameter(sql, strictMap.get("list"));
@@ -96,7 +115,8 @@ public class SqlCostInterceptor implements Interceptor {
           sql = handleMapParameter(sql, paramMap, parameterMappingList);
         } else {
           // 通用场景，比如传的是一个自定义的对象或者八种基本数据类型之一或者String
-          sql = handleCommonParameter(sql, parameterMappingList, parameterObjectClass, parameterObject);
+          sql = handleCommonParameter(sql, parameterMappingList, parameterObjectClass,
+              parameterObject);
         }
       }
     } catch (Exception e) {
@@ -111,7 +131,8 @@ public class SqlCostInterceptor implements Interceptor {
    * 美化Sql
    */
   private String beautifySql(String sql) {
-    sql = sql.replace("\n", "").replace("\t", "").replace("  ", " ").replace("( ", "(").replace(" )", ")").replace(" ,", ",");
+    sql = sql.replace("\n", "").replace("\t", "").replace("  ", " ").replace("( ", "(")
+        .replace(" )", ")").replace(" ,", ",");
 
     return sql;
   }
@@ -143,7 +164,8 @@ public class SqlCostInterceptor implements Interceptor {
   /**
    * 处理参数为Map的场景
    */
-  private String handleMapParameter(String sql, Map<?, ?> paramMap, List<ParameterMapping> parameterMappingList) {
+  private String handleMapParameter(String sql, Map<?, ?> paramMap,
+      List<ParameterMapping> parameterMappingList) {
     for (ParameterMapping parameterMapping : parameterMappingList) {
       Object propertyName = parameterMapping.getProperty();
       Object propertyValue = paramMap.get(propertyName);
@@ -162,7 +184,8 @@ public class SqlCostInterceptor implements Interceptor {
   /**
    * 处理通用的场景
    */
-  private String handleCommonParameter(String sql, List<ParameterMapping> parameterMappingList, Class<?> parameterObjectClass,
+  private String handleCommonParameter(String sql, List<ParameterMapping> parameterMappingList,
+      Class<?> parameterObjectClass,
       Object parameterObject) throws Exception {
     for (ParameterMapping parameterMapping : parameterMappingList) {
       String propertyValue = null;
@@ -191,11 +214,16 @@ public class SqlCostInterceptor implements Interceptor {
    * 是否基本数据类型或者基本数据类型的包装类
    */
   private boolean isPrimitiveOrPrimitiveWrapper(Class<?> parameterObjectClass) {
-    return parameterObjectClass.isPrimitive() ||
-        (parameterObjectClass.isAssignableFrom(Byte.class) || parameterObjectClass.isAssignableFrom(Short.class) ||
-            parameterObjectClass.isAssignableFrom(Integer.class) || parameterObjectClass.isAssignableFrom(Long.class) ||
-            parameterObjectClass.isAssignableFrom(Double.class) || parameterObjectClass.isAssignableFrom(Float.class) ||
-            parameterObjectClass.isAssignableFrom(Character.class) || parameterObjectClass.isAssignableFrom(Boolean.class));
+    return parameterObjectClass.isPrimitive()
+        || (parameterObjectClass.isAssignableFrom(Byte.class)
+        || parameterObjectClass.isAssignableFrom(Short.class)
+        || parameterObjectClass.isAssignableFrom(Integer.class)
+        || parameterObjectClass.isAssignableFrom(Long.class)
+        || parameterObjectClass.isAssignableFrom(Double.class)
+        || parameterObjectClass.isAssignableFrom(Float.class)
+        || parameterObjectClass.isAssignableFrom(Character.class)
+        || parameterObjectClass.isAssignableFrom(Boolean.class)
+        || parameterObjectClass.isAssignableFrom(String.class));
   }
 
   /**
