@@ -42,20 +42,17 @@ public class DruidTest {
 
   public static SqlSessionFactory getSqlSessionFactory() {
     DataSource dataSource = getDruidDataSource();
+
     TransactionFactory transactionFactory = new JdbcTransactionFactory();
     Environment environment = new Environment("development", transactionFactory, dataSource);
     Configuration configuration = new Configuration(environment);
-
-    configuration.addInterceptor(new SqlCostInterceptor());
     configuration.addMapper(BusinessMapper.class);
     SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     return sqlSessionFactory;
   }
 
   public static DataSource getDruidDataSource() {
-
     Properties properties = new Properties();
-
     BufferedReader bufferedReader = null;
     try {
       bufferedReader = new BufferedReader(new FileReader(

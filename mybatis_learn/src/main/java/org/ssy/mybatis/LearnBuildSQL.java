@@ -8,14 +8,9 @@ import org.apache.ibatis.jdbc.SQL;
 public class LearnBuildSQL {
 
   public static void main(String args[]) {
-
     SQL sql = new SQL();
-
     String sqlStr = sql.SELECT("name").FROM("bussiness").toString();
-
     System.out.println(sqlStr);
-
-
   }
 
 
