@@ -14,5 +14,8 @@ public interface BusinessMapper {
   @Select("SELECT * FROM business WHERE bus_name = #{busName}")
   Business selectBusinessName(String busName);
 
+  @Select("SELECT * FROM business WHERE bus_name = #{busName}")
+  Business selectBusinessObject(String busName);
+
 
 }
