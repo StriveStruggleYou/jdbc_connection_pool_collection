@@ -93,7 +93,7 @@ public class ExplainUtil implements Runnable {
         for (String columnName : columnList) {
           columnResult += resultSet.getString(columnName) + "|";
         }
-        System.out.print(columnResult);
+        System.out.println(columnResult);
       }
     } catch (SQLException e) {
       e.printStackTrace();
