@@ -22,7 +22,6 @@ public class LearnMybatisInterceptor {
       Business business = mapper.selectBusinessName("'云片2'");
       Thread.sleep(10000);
       business = mapper.selectBusiness(1);
-
       Gson gson = new Gson();
       System.out.println(gson.toJson(business));
 
