@@ -55,6 +55,14 @@
       <artifactId>jsqlparser</artifactId>
       <version>1.2</version>
     </dependency>
+
+    <dependency>
+      <groupId>tk.mybatis</groupId>
+      <artifactId>mapper</artifactId>
+      <version>3.5.0</version>
+    </dependency>
+
+
   </dependencies>
 
 </project>
